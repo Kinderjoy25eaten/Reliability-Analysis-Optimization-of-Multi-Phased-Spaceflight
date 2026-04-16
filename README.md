@@ -61,5 +61,5 @@ The PSO algorithm "learned" to design architectures that specifically exploit th
 ---
 
 ## Performance Metrics
-* **Convergence Time:** < 3.0 seconds (30 particles, 40 iterations).
+* **Convergence Time:** < under(10.0 seconds) .
 * **Memory Management:** Matrix operations are localized to the component level (typically $4 \times 4$ or $5 \times 5$), preventing global state-space explosion and ensuring computational feasibility on consumer-grade hardware.
