@@ -1,4 +1,7 @@
-# Reliability Analysis & Optimization of Multi-Phased Spaceflight
+
+<a href="https://colab.research.google.com/github/Kinderjoy25eaten/Reliability-Analysis-Optimization-of-Multi-Phased-Spaceflight/blob/main/advanced_model.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a># Reliability Analysis & Optimization of Multi-Phased Spaceflight
 
 A Python-based simulation and optimization framework for evaluating Phased-Mission Systems (PMS) under a Mixed Redundancy Strategy (MRS). The objective of this codebase is to maximize Crew Survival Probability (CSP) and Mission Success Probability (MSP) while strictly adhering to system weight and cost constraints.
 
