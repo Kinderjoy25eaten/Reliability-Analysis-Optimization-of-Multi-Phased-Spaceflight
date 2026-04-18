@@ -33,14 +33,14 @@ Both models utilize an Adaptive Particle Swarm Optimization (APSO) algorithm to 
 
 In the **Advanced Model**, the engine dynamically evaluates the system state based on mission phase activity:
 
-* **During Active Phases (Online Maintenance):** The engine simulates simultaneous wear and repair by combining the degradation and restoration matrices.
-  $$Q_{net} = Q_{damage} + Q_{repair}$$
-* **During Idle Phases (System Recovery):** When a component is not required for the current phase, the damage matrix is dropped, and the engine isolates the restoration force to simulate dedicated offline recovery.
-  $$Q_{net} = Q_{repair}$$
+* **During Active Phases (Online Maintenance & Thermal Stress):** The engine simulates simultaneous wear and repair. The damage matrix is state-dependent, incorporating the **cascading multiplier ($\gamma$)** where the failure rate at degradation state $i$ scales as $\lambda \cdot \gamma^i$.
+  $$Q_{net} = Q_{damage}(\lambda, \gamma) + Q_{repair}(\mu)$$
+* **During Idle Phases (System Recovery):** When a component is not required for the current phase, the damage matrix is dropped, isolating the continuous restoration force.
+  $$Q_{net} = Q_{repair}(\mu)$$
 
-Timeline probabilities are calculated using the matrix exponential $P(t) = P(0)e^{Qt}$, intercepting the continuum with discrete shock matrices ($S$) at phase boundaries.
-
----
+Timeline probabilities are calculated using the continuous matrix exponential, intercepted by **discrete Phase Transition Shocks ($S$)** applied exactly at phase boundaries:
+$$P_{current}(t) = P_{current}(0)e^{Q_{net}t}$$
+$$P_{next}(0) = P_{current}(t_{end}) \cdot S$$
 
 ## Computational Complexity
 
