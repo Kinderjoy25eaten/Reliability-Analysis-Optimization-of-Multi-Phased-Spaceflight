@@ -1,53 +1,67 @@
 # Reliability Analysis & Optimization of Multi-Phased Spaceflight
 
-A Python-based simulation and optimization framework for evaluating Phased-Mission Systems (PMS) under a Mixed Redundancy Strategy (MRS). The objective of this codebase is to maximize Crew Survival Probability (CSP) and Mission Success Probability (MSP) while strictly adhering to weight and cost constraints.
+A Python-based simulation and optimization framework for evaluating Phased-Mission Systems (PMS) under a Mixed Redundancy Strategy (MRS). The objective of this codebase is to maximize Crew Survival Probability (CSP) and Mission Success Probability (MSP) while strictly adhering to system weight and cost constraints.
 
-This implementation extends standard textbook reliability models by incorporating physical operational constraints, specifically thermal load-sharing and continuous online maintenance (a Birth-Death Markov process).
+This implementation extends standard textbook reliability models by incorporating physical operational constraints, specifically thermal load-sharing, transition damage, and continuous online maintenance via a Birth-Death Markov process.
 
-## Key Features
+## Core Architecture: Dynamic Path Generation
 
-* **Dynamic DFS Path Generation:** Instead of relying on static, hardcoded Boolean Decision Diagrams (BDDs) derived by hand, this engine uses a Depth-First Search (DFS) algorithm to dynamically map chronological path requirements directly from a mission graph dictionary. This makes the system easily scalable to any mission architecture.
-* **Continuous Online Maintenance:** Departs from the standard "Pure Death" non-repairable assumption. The engine dynamically sums degradation and restoration matrices ($Q_{net} = Q_{damage} + Q_{repair}$) to simulate a crew actively maintaining hardware during flight.
-* **Thermal Cascading:** Implements a cascading multiplier ($\gamma$) to penalize Hot Standby architectures that suffer from thermal and mechanical load-sharing stress.
-* **Transition Shocks:** Uses discrete damage matrices ($S$) applied at phase boundaries to simulate staging or re-entry vibrations.
+Instead of relying on static, hardcoded Boolean Decision Diagrams (BDDs) derived by hand, this engine uses a **Depth-First Search (DFS)** algorithm to dynamically map chronological path requirements directly from a mission graph dictionary. 
 
-## Repository Structure
+> **Why this matters:** This architectural choice ensures the reliability engine is infinitely scalable. Mission phases, failure branches, and rescue operations can be added or modified without rewriting the underlying probability logic.
 
-### 1. `baseline_model.ipynb`
-The control model. Evaluates hardware using a standard Continuous-Time Markov Chain (CTMC) formulated as a *Pure Death Process* (components cannot be repaired). 
-* Includes continuous switch degradation ($\lambda_s$).
-* Includes on-demand switch jamming probability for Cold Standbys ($\rho$).
+---
 
-### 2. `advanced_model.ipynb`
-The primary operational model. Introduces environmental stressors and a Birth-Death stochastic process to evaluate how active maintenance changes optimal system design.
-* **Active Phases:** Evaluates simultaneous wear and repair using a net-rate matrix: $Q_{net} = Q_{damage} + Q_{repair}$.
-* **Idle Phases:** Isolates the restoration force to simulate dedicated, offline system recovery: $Q_{net} = Q_{repair}$.
+## Repository Breakdown
 
-## Execution Flow & Architecture
+### 1. `baseline_model.ipynb` (The Control)
+Evaluates hardware using a standard Continuous-Time Markov Chain (CTMC) formulated as a *Pure Death Process* (components cannot be repaired). 
+* **Continuous Switch Failure ($\lambda_s$):** Models the continuous degradation of active switching sensors.
+* **On-Demand Switch Jamming ($\rho$):** Models the discrete probability of a switch failing to activate a Cold Standby unit.
 
-Both models utilize an Adaptive Particle Swarm Optimization (APSO) algorithm to find the optimal redundancy vector $\vec{X} = \{n_H, n_C, n_o\}$.
+### 2. `advanced_model.ipynb` (The Operational Model)
+Introduces physical stressors and a state-dependent stochastic process to evaluate how active human maintenance changes optimal system design.
+* **Cascading Load-Share Failures ($\gamma$):** A dynamic multiplier that penalizes "Hot Standby" architectures. As active units fail, the thermal and mechanical stress on the remaining active units increases, accelerating their failure rate.
+* **Phase Transition Shocks ($S$):** Discrete damage matrices applied exactly at phase boundaries to simulate violent environmental changes, such as rocket staging or atmospheric re-entry vibrations.
+* **Continuous Online Maintenance ($\mu$):** Replaces the textbook "non-repairable" assumption with an active Birth-Death process, allowing probability mass to flow back toward perfect health.
 
-1. **Graph Traversal:** The DFS maps phase dependencies for Success and Rescue branches.
-2. **State Matrix Construction:** The engine builds isolated component-level transition matrices based on specific $\lambda$ (failure) and $\mu$ (repair) rates.
-3. **Timeline Simulation:** For each particle in the swarm, the engine evaluates the mission timeline using matrix exponentials ($P(t) = P(0)e^{Qt}$), intercepting the continuum with discrete shock matrices ($S$) at phase boundaries.
-4. **Convergence:** The PSO iterates to find the configuration that maximizes CSP within the weight/cost limits.
+---
+
+## The Mathematical Engine
+
+Both models utilize an Adaptive Particle Swarm Optimization (APSO) algorithm to find the optimal redundancy vector $\vec{X} = \{n_H, n_C, n_o\}$. 
+
+In the **Advanced Model**, the engine dynamically evaluates the system state based on mission phase activity:
+
+* **During Active Phases (Online Maintenance):** The engine simulates simultaneous wear and repair by combining the degradation and restoration matrices.
+  $$Q_{net} = Q_{damage} + Q_{repair}$$
+* **During Idle Phases (System Recovery):** When a component is not required for the current phase, the damage matrix is dropped, and the engine isolates the restoration force to simulate dedicated offline recovery.
+  $$Q_{net} = Q_{repair}$$
+
+Timeline probabilities are calculated using the matrix exponential $P(t) = P(0)e^{Qt}$, intercepting the continuum with discrete shock matrices ($S$) at phase boundaries.
+
+---
 
 ## Computational Complexity
 
 To prevent the "state-space explosion" typically associated with global Markov models, this framework isolates transition matrices to the component level (usually $4 \times 4$ or $5 \times 5$ arrays). 
 
-Total time complexity:
+**Total Time Complexity:**
 $$O(I \cdot P \cdot M \cdot N \cdot K \cdot S^3)$$
 
 * $I, P$: PSO Iterations and Particles.
-* $M$: Number of valid mission paths.
+* $M$: Number of valid mission paths generated by DFS.
 * $N, K$: Number of Components and Phases.
 * $S$: Localized state-space size ($n_H + n_C + 2$).
 
-By keeping $S$ localized, the matrix operations remain computationally trivial, maintaining linear scalability relative to the number of components ($N$). A standard 30-particle, 40-iteration optimization converges in under 10 seconds.
+By keeping $S$ localized, computing the matrix exponential remains computationally trivial. A standard optimization swarm (30 particles, 40 iterations) evaluates thousands of path configurations and converges in under 10 seconds on consumer hardware.
+
+---
 
 ## Discussion of Results
 
-Testing revealed that allowing for a Birth-Death repair process fundamentally changes the optimizer's behavior. Instead of hoarding heavy Cold Standby units, the PSO learns to exploit the active repair rates ($\mu$). 
+Testing revealed that transitioning from a Pure-Death model to a Birth-Death repair process fundamentally changes the optimizer's behavior. 
 
-It mathematically favors components with high repairability, creating an asymmetric architecture where continuous human intervention effectively neutralizes the penalties of thermal cascades and staging shocks. The code demonstrates that assuming hardware is "non-repairable" leads to significantly sub-optimal and overweight spacecraft designs.
+Instead of hoarding heavy Cold Standby units to survive environmental shocks ($S$) and thermal cascades ($\gamma$), the PSO algorithm learns to structurally exploit the active repair rates ($\mu$). It mathematically favors components with high repairability, creating an asymmetric architecture where continuous human intervention effectively neutralizes physical degradation. 
+
+**Conclusion:** Assuming spaceflight hardware is strictly "non-repairable" leads to significantly sub-optimal and overweight spacecraft designs. A dynamic operational model allows for much smarter, hardware-specific engineering trade-offs.
