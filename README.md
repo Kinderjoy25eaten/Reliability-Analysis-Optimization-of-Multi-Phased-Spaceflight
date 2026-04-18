@@ -1,6 +1,10 @@
 
 <a href="https://colab.research.google.com/github/Kinderjoy25eaten/Reliability-Analysis-Optimization-of-Multi-Phased-Spaceflight/blob/main/advanced_model.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+
+  <a href="https://colab.research.google.com/github/Kinderjoy25eaten/Reliability-Analysis-Optimization-of-Multi-Phased-Spaceflight/blob/main/baseline_model.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
   
 ## Reliability Analysis & Optimization of Multi-Phased Spaceflight
 
